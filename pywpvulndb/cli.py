@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import configparser
 from .api import WpVulnDb, WpVulnDbError, WpVulnDbNotFound
 
 
@@ -17,11 +18,19 @@ def main():
     parser.add_argument('--version', '-v', help='Plugin name')
     args = parser.parse_args()
 
-    if args.key is None:
-        print("You need to provide an API key with --key/-k")
-        sys.exit(1)
+    config_path = os.path.expanduser("~") + "/.wpvulndb"
+    if os.path.isfile(config_path):
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        key = config['WpVulnDb']['key']
+    else:
+        if args.key is None:
+            print("You need to provide an API key with --key/-k")
+            sys.exit(1)
+        else:
+            key = args.key
 
-    wp = WpVulnDb(args.key)
+    wp = WpVulnDb(key)
     if args.plugin:
         try:
             res = wp.plugin(args.plugin)
@@ -29,52 +38,53 @@ def main():
             print("Plugin not found")
         except WpVulnDbError:
             print("Error, bad API key ?")
-        if args.version:
-            data = res[args.plugin]
-            print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
-            if len(data['vulnerabilities']) == 0:
-                print("No known vulnerabilities for this plugin")
-            else:
-                count = 0
-                for vuln in data['vulnerabilities']:
-                    if vuln['fixed_in'] is None:
-                        count +=1
-                        print("[MAYBE] -%s - %s - %s - No info on fixed version - https://wpvulndb.com/vulnerabilities/%i" % (
-                            vuln['published_date'],
-                            vuln['title'],
-                            vuln['vuln_type'],
-                            vuln['id']
-                            )
-                        )
-                    else:
-                        if is_smaller_version(args.version, vuln['fixed_in']):
-                            count += 1
-                            print("[VULNERABLE] -%s - %s - %s - Fixed in %s - https://wpvulndb.com/vulnerabilities/%i" % (
+        else:
+            if args.version:
+                data = res[args.plugin]
+                print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
+                if len(data['vulnerabilities']) == 0:
+                    print("No known vulnerabilities for this plugin")
+                else:
+                    count = 0
+                    for vuln in data['vulnerabilities']:
+                        if vuln['fixed_in'] is None:
+                            count +=1
+                            print("[MAYBE] -%s - %s - %s - No info on fixed version - https://wpvulndb.com/vulnerabilities/%i" % (
                                 vuln['published_date'],
                                 vuln['title'],
                                 vuln['vuln_type'],
-                                vuln['fixed_in'],
                                 vuln['id']
                                 )
                             )
-                if count == 0:
-                    print("No vulnerability found for this version")
-        else:
-            data = res[args.plugin]
-            print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
-            if len(data['vulnerabilities']) == 0:
-                print("No vulnerabilities")
+                        else:
+                            if is_smaller_version(args.version, vuln['fixed_in']):
+                                count += 1
+                                print("[VULNERABLE] -%s - %s - %s - Fixed in %s - https://wpvulndb.com/vulnerabilities/%i" % (
+                                    vuln['published_date'],
+                                    vuln['title'],
+                                    vuln['vuln_type'],
+                                    vuln['fixed_in'],
+                                    vuln['id']
+                                    )
+                                )
+                    if count == 0:
+                        print("No vulnerability found for this version")
             else:
-                print("%i vulnerabilities:" % len(data['vulnerabilities']))
-                for vuln in data['vulnerabilities']:
-                    print("-%s - %s - %s - Fixed in %s - https://wpvulndb.com/vulnerabilities/%i" % (
-                        vuln['published_date'],
-                        vuln['title'],
-                        vuln['vuln_type'],
-                        vuln['fixed_in'],
-                        vuln['id']
+                data = res[args.plugin]
+                print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
+                if len(data['vulnerabilities']) == 0:
+                    print("No vulnerabilities")
+                else:
+                    print("%i vulnerabilities:" % len(data['vulnerabilities']))
+                    for vuln in data['vulnerabilities']:
+                        print("-%s - %s - %s - Fixed in %s - https://wpvulndb.com/vulnerabilities/%i" % (
+                            vuln['published_date'],
+                            vuln['title'],
+                            vuln['vuln_type'],
+                            vuln['fixed_in'],
+                            vuln['id']
+                            )
                         )
-                    )
     elif args.wordpress:
         data = wp.wordpress(args.wordpress)[args.wordpress]
         print("Wordpress %s released on %s" % (args.wordpress, data['release_date']))
@@ -89,7 +99,7 @@ def main():
                     vuln['id']
                     )
                 )
-    if args.theme:
+    elif args.theme:
         try:
             res = wp.theme(args.theme)
         except WpVulnDbNotFound:

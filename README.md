@@ -21,7 +21,7 @@ wpvulnz = wp.wordpress("4.7.1")
 
 Example of code:
 ```py
-from .pywpvulndb import WpVulnDb, WpVulnDbError, WpVulnDbNotFound
+from pywpvulndb import WpVulnDb, WpVulnDbError, WpVulnDbNotFound
 
 wp = WpVulnDb(KEY)
 
@@ -41,6 +41,14 @@ For more information, see :
 * [The code of the Command-Line Interface](https://github.com/Te-k/pywpvulndb/blob/master/pywpvulndb/cli.py)
 
 ## Command-Line Interface
+
+You have two ways to store the key:
+* Give the key as a `-k` parameter with every command
+* Store the key in `~/.wpvulndb` under the format:
+```
+[WpVulnDb]
+key: KEYHERE
+```
 
 Help:
 ```
@@ -82,16 +90,15 @@ Wordpress 4.7.1 released on 2017-01-11
 * 2017-01-26T00:00:00 - WordPress 3.5-4.7.1 - WP_Query SQL Injection - SQLI - https://wpvulndb.com/vulnerabilities/8730
 [SNIP]
 
-$ wpvulndb -k APIKEY -t pagelines
+$ wpvulndb -t pagelines
 Last-Updated: 2015-01-19T00:00:00 in 1.4.6
 1 vulnerabilities:
 -None - Pagelines Theme <= 1.4.5 - Privilege escalation - BYPASS - Fixed in 1.4.6 - https://wpvulndb.com/vulnerabilities/7763
 
-$ wpvulndb -k APIKEY -t pagelines -v 1.4.7
+$ wpvulndb -t pagelines -v 1.4.7
 Last-Updated: 2015-01-19T00:00:00 in 1.4.6
 No vulnerability found for this version
 ```
-
 
 ## LICENSE
 
