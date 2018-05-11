@@ -1,1 +1,1 @@
-from .api import WpVulnDb, WpVulnDbError, WpVulnDbNotFound
+from .api import WpVulnDb, WpVulnDbError, WpVulnDbNotFound, PluginVersion

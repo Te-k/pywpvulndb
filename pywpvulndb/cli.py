@@ -1,13 +1,10 @@
 import argparse
 import sys
 import os
+import json
 import configparser
-from .api import WpVulnDb, WpVulnDbError, WpVulnDbNotFound
+from .api import WpVulnDb, WpVulnDbError, WpVulnDbNotFound, PluginVersion
 
-
-def is_smaller_version(v1, v2):
-    # FIXME: may not work all the time, 4.3.10 > 4.3.2
-    return (int(v1.replace(".", "")) < int(v2.replace(".", "")))
 
 def main():
     parser = argparse.ArgumentParser(description='Request WP Vuln DB')
@@ -16,6 +13,7 @@ def main():
     parser.add_argument('--theme', '-t', help='Theme name')
     parser.add_argument('--wordpress', '-w', help='Wordpress Version')
     parser.add_argument('--version', '-v', help='Plugin name')
+    parser.add_argument('--json', '-j', action='store_true', help='Print raw json')
     args = parser.parse_args()
 
     config_path = os.path.expanduser("~") + "/.wpvulndb"
@@ -39,7 +37,9 @@ def main():
         except WpVulnDbError:
             print("Error, bad API key ?")
         else:
-            if args.version:
+            if args.json:
+                print(json.dumps(res, sort_keys=False, indent=4))
+            elif args.version:
                 data = res[args.plugin]
                 print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
                 if len(data['vulnerabilities']) == 0:
@@ -57,7 +57,7 @@ def main():
                                 )
                             )
                         else:
-                            if is_smaller_version(args.version, vuln['fixed_in']):
+                            if (PluginVersion(args.version) < PluginVersion(vuln['fixed_in'])):
                                 count += 1
                                 print("[VULNERABLE] -%s - %s - %s - Fixed in %s - https://wpvulndb.com/vulnerabilities/%i" % (
                                     vuln['published_date'],
@@ -70,8 +70,8 @@ def main():
                     if count == 0:
                         print("No vulnerability found for this version")
             else:
-                data = res[args.plugin]
-                print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
+                data = res[list(res.keys())[0]]
+                print("Last-Updated: %s in %s" % (data['last_updated'], data['latest_version']))
                 if len(data['vulnerabilities']) == 0:
                     print("No vulnerabilities")
                 else:
@@ -87,18 +87,21 @@ def main():
                         )
     elif args.wordpress:
         data = wp.wordpress(args.wordpress)[args.wordpress]
-        print("Wordpress %s released on %s" % (args.wordpress, data['release_date']))
-        if len(data['vulnerabilities']) == 0:
-            print("No vulnerabilities for this version")
+        if args.json:
+            print(json.dumps(res, sort_keys=False, indent=4))
         else:
-            for vuln in data['vulnerabilities']:
-                print("* %s - %s - %s - https://wpvulndb.com/vulnerabilities/%i" % (
-                    vuln['published_date'][:19],
-                    vuln['title'],
-                    vuln['vuln_type'],
-                    vuln['id']
+            print("Wordpress %s released on %s" % (args.wordpress, data['release_date']))
+            if len(data['vulnerabilities']) == 0:
+                print("No vulnerabilities for this version")
+            else:
+                for vuln in data['vulnerabilities']:
+                    print("* %s - %s - %s - https://wpvulndb.com/vulnerabilities/%i" % (
+                        vuln['published_date'][:19],
+                        vuln['title'],
+                        vuln['vuln_type'],
+                        vuln['id']
+                        )
                     )
-                )
     elif args.theme:
         try:
             res = wp.theme(args.theme)
@@ -106,7 +109,9 @@ def main():
             print("Plugin not found")
         except WpVulnDbError:
             print("Error, bad API key ?")
-        if args.version:
+        if args.json:
+            print(json.dumps(res, sort_keys=False, indent=4))
+        elif args.version:
             data = res[args.theme]
             print("Last-Updated: %s in %s" % (data['last_updated'][:19], data['latest_version']))
             if len(data['vulnerabilities']) == 0:
