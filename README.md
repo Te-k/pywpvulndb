@@ -103,3 +103,5 @@ No vulnerability found for this version
 ## LICENSE
 
 This code is licensed under the MIT License, which basically says that you can do whatever you want with this code, but don't blame me if it fails. See details [here](https://github.com/Te-k/pywpvulndb/blob/master/LICENSE)
+
+The wpvulndb.com API is free for non-commercial use, but requires payment and permission for any potential commercial use. Read [here](https://wpvulndb.com/api) for more information.
